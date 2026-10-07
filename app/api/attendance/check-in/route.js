@@ -3,9 +3,9 @@ import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 
 // Facility Geometry — coordinates set via Vercel env vars (exact Hosur lab location)
-const TARGET_LAT = parseFloat(process.env.NEXT_PUBLIC_TARGET_LAT) || 12.716065;
-const TARGET_LNG = parseFloat(process.env.NEXT_PUBLIC_TARGET_LNG) || 77.870016;
-const MAX_RADIUS_METERS = parseInt(process.env.NEXT_PUBLIC_MAX_RADIUS_METERS) || 300;
+const DEFAULT_TARGET_LAT = parseFloat(process.env.NEXT_PUBLIC_TARGET_LAT) || 12.716065;
+const DEFAULT_TARGET_LNG = parseFloat(process.env.NEXT_PUBLIC_TARGET_LNG) || 77.870016;
+const DEFAULT_MAX_RADIUS_METERS = parseInt(process.env.NEXT_PUBLIC_MAX_RADIUS_METERS) || 300;
 
 // Haversine formula (Server-side Source of Truth)
 const getDistanceFromLatLonInM = (lat1, lon1, lat2, lon2) => {
@@ -40,7 +40,12 @@ export async function POST(request) {
     const { data: emp } = await supabase.from('employees').select('id, role, full_name').eq('email', user.email).single();
     if (!emp) return NextResponse.json({ error: 'Employee record not found' }, { status: 404 });
 
-    // 2. Geofence Verification (Server-side Source of Truth — uses Vercel env vars)
+    // 2. Geofence Verification (Server-side Source of Truth — uses DB config or env vars)
+    const { data: config } = await supabase.from('system_config').select('value').eq('key', 'attendance_geofence').maybeSingle();
+    const TARGET_LAT = config?.value?.TARGET_LAT || DEFAULT_TARGET_LAT;
+    const TARGET_LNG = config?.value?.TARGET_LNG || DEFAULT_TARGET_LNG;
+    const MAX_RADIUS_METERS = config?.value?.MAX_RADIUS_METERS || DEFAULT_MAX_RADIUS_METERS;
+
     const distance = getDistanceFromLatLonInM(lat, lng, TARGET_LAT, TARGET_LNG);
     const inGeofence = distance <= MAX_RADIUS_METERS;
     const isLeadership = ['admin', 'ceo', 'cto'].includes(emp.role) || (emp.full_name && emp.full_name.toLowerCase().includes('abinaya'));

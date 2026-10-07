@@ -310,8 +310,12 @@ export default function AttendanceClient({
           const distance = getDistanceFromLatLonInM(latitude, longitude, geofence.lat, geofence.lng);
           const isLeadership = ['admin', 'ceo', 'cto'].includes(role) || employeeProfile?.full_name?.toLowerCase().includes('abinaya');
           const isNearby = distance <= geofence.radius + 150; // Buffer for indoor GPS drift
-          if (distance > geofence.radius && !isLeadership && !isNearby) {
-            setCheckInError(`You are ${fmtDist(distance)} from the facility (allowed: ${geofence.radius}m). Please check in from the premises. If you are actually on-site, your phone may be using network-based location instead of GPS — enable "Precise location" / GPS in your browser & device settings and try again.`);
+          if (!isNearby && !isLeadership) {
+            if (accuracy > ACCURACY_THRESHOLD) {
+              setCheckInError(`📡 GPS signal too weak (±${Math.round(accuracy)}m). Step near a window, enable WiFi, wait 30s and try again.`);
+            } else {
+              setCheckInError(`You are ${fmtDist(distance)} from the facility (allowed: ${geofence.radius}m). Please check in from the premises. If you are actually on-site, your phone may be using network-based location instead of GPS — enable "Precise location" / GPS in your browser & device settings and try again.`);
+            }
             setActionLoading(false);
             return;
           }
@@ -431,7 +435,7 @@ export default function AttendanceClient({
             if (accuracy > ACCURACY_THRESHOLD) {
               setCheckInError(`📡 GPS signal too weak (±${Math.round(accuracy)}m). Step near a window, enable WiFi, wait 30s and try again.`);
             } else {
-              setCheckInError(`You are ${fmtDist(distance)} from the facility (allowed: ${geofence.radius}m). Please check out from the premises.`);
+              setCheckInError(`You are ${fmtDist(distance)} from the facility. Since you've left the premises, please use the 'Corrections' tab below to submit a Missed Checkout request.`);
             }
             setActionLoading(false);
             return;
