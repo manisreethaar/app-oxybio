@@ -757,7 +757,6 @@ export default function PayrollPage() {
     setCalMonth(now.getMonth() + 1);
     setCalYear(now.getFullYear());
     fetchCalendarData(emp.id, now.getMonth() + 1, now.getFullYear());
-    fetchCalendarData(emp.id, now.getMonth() + 1, now.getFullYear());
     setMobilePanel('calendar');
   }, [fetchCalendarData, now]);
 

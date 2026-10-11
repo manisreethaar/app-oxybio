@@ -50,7 +50,7 @@ export async function POST(request) {
       const empRole = data.employees.role?.toLowerCase();
       const leaveType = data.leave_type;
       const totalDays = data.total_days || 0;
-      const clOnlyRoles = ['intern', 'research_intern'];
+      const clOnlyRoles = ['intern', 'research_intern', 'research_fellow'];
 
       // Only decrement stored balances for permanent staff (interns use dynamic DOJ calc)
       if (!clOnlyRoles.includes(empRole) && totalDays > 0) {

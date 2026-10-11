@@ -58,29 +58,44 @@ export async function POST(request) {
 
     const { leave_type, start_date, end_date, reason } = await request.json();
 
-    // 1. Calculate days requested excluding weekends and holidays
-    const start = new Date(start_date);
-    const end = new Date(end_date);
-    
-    // Fetch holidays
-    const { data: holidays } = await supabase.from('hr_holidays')
-      .select('holiday_date')
-      .gte('holiday_date', start_date)
-      .lte('holiday_date', end_date);
-    
-    const holidayDates = (holidays || []).map(h => h.holiday_date);
-    
-    let days = 0;
-    let curr = new Date(start);
-    while(curr <= end) {
-      const isoDate = curr.toISOString().split('T')[0];
-      if (!holidayDates.includes(isoDate)) {
-        days++;
-      }
-      curr.setDate(curr.getDate() + 1);
+    if (!leave_type || !start_date || !end_date) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if (days <= 0) return NextResponse.json({ error: 'Invalid date range selected' }, { status: 400 });
+    const isPermission = leave_type === 'Permission';
+    let days = 0;
+
+    if (isPermission) {
+      days = 0;
+    } else {
+      // 1. Calculate days requested excluding Sundays and holidays
+      const start = new Date(start_date + 'T00:00:00');
+      const end = new Date(end_date + 'T00:00:00');
+      if (end < start) {
+        return NextResponse.json({ error: 'End date cannot be earlier than start date' }, { status: 400 });
+      }
+
+      // Fetch holidays
+      const { data: holidays } = await supabase.from('hr_holidays')
+        .select('holiday_date')
+        .gte('holiday_date', start_date)
+        .lte('holiday_date', end_date);
+
+      const holidayDates = (holidays || []).map(h => h.holiday_date);
+
+      let curr = new Date(start);
+      while (curr <= end) {
+        const isoDate = curr.toISOString().split('T')[0];
+        const isSunday = curr.getDay() === 0;
+        if (!isSunday && !holidayDates.includes(isoDate)) {
+          days++;
+        }
+        curr.setDate(curr.getDate() + 1);
+      }
+
+      if (days <= 0) return NextResponse.json({ error: 'No working days in the selected date range' }, { status: 400 });
+    }
+
     // 2. Fetch Employee Profile
     const { data: emp } = await supabase
       .from('employees')
@@ -102,47 +117,49 @@ export async function POST(request) {
     // 4. Calculate available balance
     let remainingBalance = 0;
 
-    if (isClOnly) {
-      if (!emp.joined_date) {
-        return NextResponse.json({ error: 'Your joining date is not configured. Please contact your administrator.' }, { status: 400 });
+    if (!isPermission) {
+      if (isClOnly) {
+        if (!emp.joined_date) {
+          return NextResponse.json({ error: 'Your joining date is not configured. Please contact your administrator.' }, { status: 400 });
+        }
+
+        // Earned CL based on DOJ policy (6 on DOJ, then 1/month after 6-month mark)
+        const earnedCL = calculateEarnedCL(emp.joined_date);
+
+        // Deduct already approved/pending CL applications in the CURRENT calendar year
+        const currentYearStart = `${new Date().getFullYear()}-01-01`;
+        const { data: usedLeaves } = await supabase
+          .from('leave_applications')
+          .select('total_days')
+          .eq('employee_id', emp.id)
+          .eq('leave_type', 'Casual')
+          .in('status', ['approved', 'pending'])
+          .gte('start_date', currentYearStart);
+
+        const usedDays = (usedLeaves || []).reduce((acc, l) => acc + (l.total_days || 0), 0);
+        remainingBalance = earnedCL - usedDays;
+
+      } else {
+        // Permanent staff: use stored balances by leave type
+        if (leave_type === 'Casual') remainingBalance = emp.casual_leave_balance ?? 12;
+        else if (leave_type === 'Sick' || leave_type === 'Medical') remainingBalance = emp.medical_leave_balance ?? 6;
+        else if (leave_type === 'Earned') remainingBalance = emp.earned_leave_balance ?? 15;
+
+        // Deduct only leaves currently PENDING approval (since approved leaves are already decremented from the stored balance in /api/leave/process)
+        const { data: pendingLeaves } = await supabase
+          .from('leave_applications')
+          .select('total_days')
+          .eq('employee_id', emp.id)
+          .eq('leave_type', leave_type)
+          .eq('status', 'pending');
+        const pendingDays = (pendingLeaves || []).reduce((acc, l) => acc + (l.total_days || 0), 0);
+        remainingBalance = remainingBalance - pendingDays;
       }
-
-      // Earned CL based on DOJ policy (6 on DOJ, then 1/month after 6-month mark)
-      const earnedCL = calculateEarnedCL(emp.joined_date);
-
-      // Deduct already approved/pending CL applications in the CURRENT calendar year
-      const currentYearStart = `${new Date().getFullYear()}-01-01`;
-      const { data: usedLeaves } = await supabase
-        .from('leave_applications')
-        .select('total_days')
-        .eq('employee_id', emp.id)
-        .eq('leave_type', 'Casual')
-        .in('status', ['approved', 'pending'])
-        .gte('start_date', currentYearStart);
-
-      const usedDays = (usedLeaves || []).reduce((acc, l) => acc + (l.total_days || 0), 0);
-      remainingBalance = earnedCL - usedDays;
-
-    } else {
-      // Permanent staff: use stored balances by leave type
-      if (leave_type === 'Casual') remainingBalance = emp.casual_leave_balance ?? 12;
-      else if (leave_type === 'Sick' || leave_type === 'Medical') remainingBalance = emp.medical_leave_balance ?? 6;
-      else if (leave_type === 'Earned') remainingBalance = emp.earned_leave_balance ?? 15;
-
-      // Deduct already approved/pending for the same type
-      const { data: activeLeaves } = await supabase
-        .from('leave_applications')
-        .select('total_days')
-        .eq('employee_id', emp.id)
-        .eq('leave_type', leave_type)
-        .in('status', ['approved', 'pending']);
-      const usedDays = (activeLeaves || []).reduce((acc, l) => acc + (l.total_days || 0), 0);
-      remainingBalance = remainingBalance - usedDays;
     }
 
     // 5. Balance check & LOP calculation
     let lop_days = 0;
-    if (days > remainingBalance) {
+    if (!isPermission && days > remainingBalance) {
       lop_days = days - Math.max(0, remainingBalance);
     }
 
@@ -152,7 +169,8 @@ export async function POST(request) {
       .select('id')
       .eq('employee_id', emp.id)
       .in('status', ['approved', 'pending'])
-      .or(`and(start_date.lte.${end_date},end_date.gte.${start_date})`);
+      .lte('start_date', end_date)
+      .gte('end_date', start_date);
 
     if (overlapping?.length > 0) {
       return NextResponse.json({ error: 'Scheduling Conflict: You already have a leave during this period.' }, { status: 400 });
@@ -174,7 +192,9 @@ export async function POST(request) {
 
     await notifyAdmins(
       '📅 New Leave Application',
-      `${user.email} applied for ${days} days of ${leave_type} leave.`,
+      isPermission
+        ? `${user.email} submitted a short leave permission request.`
+        : `${user.email} applied for ${days} days of ${leave_type} leave.`,
       '/leave'
     );
 

@@ -110,13 +110,16 @@ export default function LeavePage() {
   const calculateDays = () => {
     if (isPermission) return 0;
     if (!watchStartDate || !watchEndDate) return 0;
-    const start = new Date(watchStartDate);
-    const end = new Date(watchEndDate);
+    const start = new Date(watchStartDate + 'T00:00:00');
+    const end = new Date(watchEndDate + 'T00:00:00');
     if (end < start) return 0;
-    // Calculate calendar days
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
+    let days = 0;
+    let curr = new Date(start);
+    while (curr <= end) {
+      if (curr.getDay() !== 0) days++; // Exclude Sundays
+      curr.setDate(curr.getDate() + 1);
+    }
+    return days;
   };
 
   const handleApplyForm = async (data) => {
