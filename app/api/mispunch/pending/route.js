@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
 import { createAdminClient } from '@/utils/supabase/admin';
+import { isMasterAdmin } from '@/lib/permissions';
 import { NextResponse } from 'next/server';
 
 export async function GET(request) {
@@ -18,7 +19,9 @@ export async function GET(request) {
       .eq('email', user.email)
       .single();
 
-    if (empErr || !emp || !['admin', 'ceo', 'cto', 'research_fellow'].includes(emp.role)) {
+    const isMaster = isMasterAdmin(user.email);
+    const isApprover = ['admin', 'ceo', 'cto'].includes(emp?.role) || isMaster;
+    if (empErr || !emp || !isApprover) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -29,8 +32,8 @@ export async function GET(request) {
       .eq('mispunch_status', 'pending')
       .order('date', { ascending: false });
 
-    // CEO can approve their own; other admins cannot
-    if (emp.role !== 'ceo') {
+    // CEO and Master Admin can approve their own; other admins cannot
+    if (emp.role !== 'ceo' && !isMaster) {
       query = query.neq('employee_id', emp.id);
     }
 

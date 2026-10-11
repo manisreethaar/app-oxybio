@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
 import { useAuth } from '@/context/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import { withTimeout } from '@/lib/withTimeout';
@@ -27,24 +26,28 @@ export default function MispunchContent() {
   const [rejectRemark, setRejectRemark] = useState('');
   const supabase = useMemo(() => createClient(), []);
 
+  const todayStr = useMemo(() => {
+    return new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().split('T')[0];
+  }, []);
+
   const fetchData = async () => {
-    if (!employeeProfile) return;
+    if (!employeeProfile?.id) return;
     setLoading(true);
     try {
       const results = await withTimeout(Promise.all([
-        employeeProfile.id ? supabase
+        supabase
           .from('attendance_log')
-          .select('id, date, mispunch_status, mispunch_reason, mispunch_requested_hours, employee_id')
+          .select('id, date, mispunch_status, mispunch_reason, mispunch_requested_hours, mispunch_remark, employee_id')
           .eq('employee_id', employeeProfile.id)
           .not('mispunch_status', 'is', null)
-          .order('date', { ascending: false }) : Promise.resolve({ data: [] }),
-        employeeProfile.id ? supabase
+          .order('date', { ascending: false }),
+        supabase
           .from('attendance_log')
           .select('id, date, check_in_time')
           .eq('employee_id', employeeProfile.id)
           .is('check_out_time', null)
           .is('mispunch_status', null)
-          .order('date', { ascending: false }) : Promise.resolve({ data: [] }),
+          .order('date', { ascending: false }),
         isAdmin ? fetch('/api/mispunch/pending').then(r => r.json()) : Promise.resolve(null)
       ]), 45000, 'Attendance fetch timed out');
 
@@ -57,8 +60,11 @@ export default function MispunchContent() {
       setOpenShifts(openRes.data || []);
 
       if (isAdmin && adminRes) {
-        if (adminRes.error) throw new Error(adminRes.error);
-        setAdminMispunches(adminRes.data || []);
+        if (adminRes.data) {
+          setAdminMispunches(adminRes.data);
+        } else if (adminRes.error) {
+          console.warn('[MispunchContent] Admin fetch returned error:', adminRes.error);
+        }
       }
     } catch (err) {
       console.error('Fetch error:', err);
@@ -86,15 +92,15 @@ export default function MispunchContent() {
           reason: formData.reason,
         }),
       });
+      const resData = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || 'Submission failed');
+        throw new Error(resData.error || 'Submission failed');
       }
       setSelectedLog(null);
       setFormData({ hours: '', reason: '' });
       fetchData();
       toast.success('Mispunch request submitted for approval!');
-      notifyEmployee(employeeProfile.id, 'Mispunch Requested', 'Your mispunch request has been successfully submitted.', '/mispunch');
+      notifyEmployee(employeeProfile.id, 'Mispunch Requested', 'Your mispunch request has been successfully submitted.', '/attendance?tab=corrections');
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -116,15 +122,15 @@ export default function MispunchContent() {
           reason: selfReportData.reason,
         }),
       });
+      const resData = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || 'Submission failed');
+        throw new Error(resData.error || 'Submission failed');
       }
       setSelfReportLog(null);
       setSelfReportData({ hours: '', reason: '' });
       fetchData();
       toast.success('Missed checkout reported. Awaiting admin approval.');
-      notifyEmployee(employeeProfile.id, 'Missed Checkout Reported', 'Your missed checkout report has been successfully submitted.', '/mispunch');
+      notifyEmployee(employeeProfile.id, 'Missed Checkout Reported', 'Your missed checkout report has been successfully submitted.', '/attendance?tab=corrections');
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -150,14 +156,14 @@ export default function MispunchContent() {
         throw new Error(resData.error || resData.details || `Server error: ${res.status}`);
       }
       toast.success(`Mispunch ${action === 'approve' ? 'approved' : 'rejected'} successfully.`);
+      setReviewingLog(null);
+      setRejectRemark('');
       await fetchData();
     } catch (err) {
       console.error('[handleAdminReview]', err);
       toast.error(err.message || 'Review failed. Please try again.');
     } finally {
       setSubmitting(false);
-      setReviewingLog(null);
-      setRejectRemark('');
     }
   };
 
@@ -212,7 +218,7 @@ export default function MispunchContent() {
                     <div className="space-y-2 mt-3">
                       <input
                         type="text"
-                        placeholder="Reason for rejection (required)..."
+                        placeholder="Reason for rejection (min 5 chars)..."
                         className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white focus:border-red-500 outline-none"
                         value={rejectRemark}
                         onChange={e => setRejectRemark(e.target.value)}
@@ -262,33 +268,41 @@ export default function MispunchContent() {
             <LogOut className="w-3 h-3" /> Forgot to Check Out? ({openShifts.length})
           </h2>
           <div className="grid gap-3">
-            {openShifts.map(log => (
-              <div key={log.id} className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="bg-amber-100 p-2.5 rounded-lg border border-amber-200">
-                    <Calendar className="w-5 h-5 text-amber-600" />
+            {openShifts.map(log => {
+              const isToday = log.date === todayStr;
+              return (
+                <div key={log.id} className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-amber-100 p-2.5 rounded-lg border border-amber-200">
+                      <Calendar className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900">
+                        {new Date(log.date).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
+                        {isToday && (
+                          <span className="ml-2 text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">
+                            Today
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs font-medium text-amber-700 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded inline-block mt-0.5 uppercase tracking-wider">
+                        {isToday ? 'Off-site? Report only if you left without checkout' : 'Shift Still Open — Not Checked Out'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-bold text-slate-900">
-                      {new Date(log.date).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
-                    </p>
-                    <p className="text-xs font-medium text-amber-700 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded inline-block mt-0.5 uppercase tracking-wider">
-                      Shift Still Open — Not Checked Out
-                    </p>
-                  </div>
+                  <button
+                    onClick={() => setSelfReportLog(log)}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5"
+                  >
+                    Report <ArrowRight className="w-3 h-3" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setSelfReportLog(log)}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5"
-                >
-                  Report <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <p className="text-xs text-slate-400 flex items-start gap-1.5">
             <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
-            Your shift will be closed with 0 hours and submitted for admin approval with the hours you enter.
+            Your shift will be closed and submitted for admin review with the hours you enter.
           </p>
         </section>
       )}
@@ -319,7 +333,7 @@ export default function MispunchContent() {
                 </div>
                 <button
                   onClick={() => setSelectedLog(log)}
-                  className="px-4 py-2 bg-navy text-white text-xs font-bold rounded-lg hover:bg-navy-hover transition-colors flex items-center gap-1.5"
+                  className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-1.5"
                 >
                   Apply <ArrowRight className="w-3 h-3" />
                 </button>
@@ -336,13 +350,18 @@ export default function MispunchContent() {
           </h2>
           <div className="grid gap-2">
             {historyLogs.map(log => (
-              <div key={log.id} className="bg-slate-50/50 border border-slate-100 p-3 rounded-lg flex items-center justify-between opacity-80">
+              <div key={log.id} className="bg-slate-50/50 border border-slate-100 p-3 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 opacity-90">
                 <div className="text-xs">
                   <span className="font-bold text-slate-700">{new Date(log.date).toLocaleDateString()}</span>
                   <span className="mx-2 text-slate-300">|</span>
                   <span className="text-slate-500">{log.mispunch_reason}</span>
+                  {log.mispunch_status === 'rejected' && log.mispunch_remark && (
+                    <div className="mt-1 text-red-600 font-medium text-xs">
+                      Admin remark: {log.mispunch_remark}
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <span className="text-xs font-black text-slate-500 uppercase">{log.mispunch_requested_hours}H Requested</span>
                   <span className={`text-xs font-black px-1.5 py-0.5 rounded border uppercase tracking-widest ${
                     log.mispunch_status === 'pending'  ? 'bg-amber-100 text-amber-700 border-amber-200' :
@@ -359,8 +378,8 @@ export default function MispunchContent() {
       )}
 
       {selfReportLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
-          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200">
             <form onSubmit={handleSelfReport}>
               <div className="p-6 border-b border-slate-100 bg-amber-50">
                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -375,7 +394,7 @@ export default function MispunchContent() {
                 <div>
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Hours Actually Worked</label>
                   <input
-                    type="number" step="0.5" min="0.5" max="16" required
+                    type="number" step="0.5" min="0.5" max="24" required
                     className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all outline-none text-sm font-bold"
                     placeholder="e.g. 8.5"
                     value={selfReportData.hours}
@@ -405,8 +424,8 @@ export default function MispunchContent() {
       )}
 
       {selectedLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50/10 backdrop-blur-sm">
-          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="max-h-[90vh] flex flex-col overflow-hidden bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200">
             <form onSubmit={handleSubmit}>
               <div className="p-6 border-b border-slate-100 bg-slate-50/50">
                 <h3 className="text-lg font-bold text-slate-900">Mispunch For {new Date(selectedLog.date).toLocaleDateString()}</h3>
@@ -416,8 +435,8 @@ export default function MispunchContent() {
                 <div>
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Hours Actually Worked</label>
                   <input
-                    type="number" step="0.5" min="0.5" max="16" required
-                    className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-navy focus:border-navy transition-all outline-none text-sm font-bold"
+                    type="number" step="0.5" min="0.5" max="24" required
+                    className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all outline-none text-sm font-bold"
                     placeholder="e.g. 8.5"
                     value={formData.hours}
                     onChange={e => setFormData({ ...formData, hours: e.target.value })}
@@ -428,7 +447,7 @@ export default function MispunchContent() {
                   <textarea
                     required
                     placeholder="e.g. Forgot to check out while leaving for field visit..."
-                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-navy focus:border-navy transition-all outline-none text-sm min-h-[100px] resize-none"
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all outline-none text-sm min-h-[100px] resize-none"
                     value={formData.reason}
                     onChange={e => setFormData({ ...formData, reason: e.target.value })}
                   />
@@ -436,7 +455,7 @@ export default function MispunchContent() {
               </div>
               <div className="p-4 bg-slate-50 flex gap-3">
                 <button type="button" onClick={() => setSelectedLog(null)} className="flex-1 py-2.5 bg-white text-slate-600 font-semibold rounded-lg border border-slate-200 text-sm">Cancel</button>
-                <button type="submit" disabled={submitting} className="flex-1 py-2.5 bg-navy hover:bg-navy-hover text-white font-bold rounded-lg shadow-sm flex items-center justify-center disabled:opacity-50 text-sm">
+                <button type="submit" disabled={submitting} className="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg shadow-sm flex items-center justify-center disabled:opacity-50 text-sm">
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5 mr-2" /> Submit Application</>}
                 </button>
               </div>

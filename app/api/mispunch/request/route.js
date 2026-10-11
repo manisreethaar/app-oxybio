@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
+import { getApiUserOrFallback } from '@/utils/supabase/get-api-user';
 import { notifyAdmins } from '@/utils/serverNotify';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -14,17 +15,18 @@ const mispunchRequestSchema = z.object({
 export async function POST(request) {
   try {
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getApiUserOrFallback(supabase);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
     const parsed = mispunchRequestSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.format() }, { status: 400 });
 
     const { logId, hours, reason } = parsed.data;
+    const supabaseAdmin = createAdminClient();
 
     // 1. Verify log belongs to the user and is in 'required' status
-    const { data: log, error: logErr } = await supabase
+    const { data: log, error: logErr } = await supabaseAdmin
       .from('attendance_log')
       .select('id, employee_id, mispunch_status')
       .eq('id', logId)
@@ -32,7 +34,7 @@ export async function POST(request) {
 
     if (logErr || !log) return NextResponse.json({ error: 'Log not found' }, { status: 404 });
 
-    const { data: emp } = await supabase.from('employees').select('id').eq('email', user.email).single();
+    const { data: emp } = await supabaseAdmin.from('employees').select('id, full_name').eq('email', user.email).single();
     if (!emp || log.employee_id !== emp.id) {
       return NextResponse.json({ error: 'Forbidden: You do not own this attendance log.' }, { status: 403 });
     }
@@ -42,7 +44,7 @@ export async function POST(request) {
     }
 
     // 2. Update log with request details
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('attendance_log')
       .update({
         mispunch_status: 'pending',
@@ -55,9 +57,9 @@ export async function POST(request) {
 
     // 3. Notify Admins
     await notifyAdmins(
-        '📄 New Mispunch Request',
-        `${user.email} has applied for ${hours}h reconciliation.`,
-        '/mispunch'
+      '📄 New Mispunch Request',
+      `${emp.full_name || user.email} has applied for ${hours}h reconciliation.`,
+      '/attendance?tab=corrections'
     );
 
     return NextResponse.json({ success: true });
